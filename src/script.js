@@ -17,9 +17,10 @@ class Unit{
     }
 
     calculateFitness(env) {
-        const dr = this.genes.r - env.bg.r
-        const dg = this.genes.g - env.bg.g
-        const db = this.genes.b - env.bg.b
+        const index = (this.position.x + this.position.y * canvas.width) * 4
+        const dr = this.genes.r - env.background.data[index]
+        const dg = this.genes.g - env.background.data[index + 1]
+        const db = this.genes.b - env.background.data[index + 2]
 
         this.fitness = Math.max(0, 1 - Math.sqrt(dr*dr + dg*dg + db*db) / 441) // ~441 is max distance between two RGB pixels
     }
@@ -27,16 +28,17 @@ class Unit{
 
 class Enviroment {
     constructor() {
-        this.background = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
+        this.background
     }
 
     update() {
-
-        this.background.addColorStop(0, "green");
-        this.background.addColorStop(0.5, "red");
-        this.background.addColorStop(1, "blue");
-        ctx.fillStyle = this.background
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
+        gradient.addColorStop(0, "green");
+        gradient.addColorStop(0.5, "red");
+        gradient.addColorStop(1, "blue");
+        ctx.fillStyle = gradient
         ctx.fillRect(0, 0, canvas.width, canvas.height)
+        this.background = ctx.getImageData(0, 0, canvas.width, canvas.height)        
     }
 
 }
@@ -57,6 +59,12 @@ class Population {
         }
     }
 
+    calcPopFitness(){
+        this.units.forEach((unit, index) => {
+            unit.calculateFitness(this.env)
+        })
+    }
+
 }
 
 class Simulation {
@@ -67,19 +75,20 @@ class Simulation {
     }
 
     draw() {
-        // env.update()
+        env.update()
 
         this.population.units.forEach((unit, index) => {
             
             this.ctx.beginPath()
-            this.ctx.arc(60 + (index * 100), 100, 50, 0, Math.Pi * 2)
+            this.ctx.arc(unit.position.x, unit.position.y, 15, 0, Math.PI * 2)
             this.ctx.fillStyle = `rgb(${unit.genes.r}, ${unit.genes.g}, ${unit.genes.b})`
             this.ctx.fill()
-            // ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
             // ctx.stroke()
-            console.log(ctx.fillStyle)
             this.ctx.closePath()
         })
+
+
     }
 }
 
@@ -94,3 +103,4 @@ const sim = new Simulation(env, population, ctx)
 
 sim.draw()
 
+population.calcPopFitness()
